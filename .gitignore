@@ -133,5 +133,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-
+#Ignore files type .db
 *.db
+
+#Ignore dataset with big size
+/dados/df_acordaos.csv
