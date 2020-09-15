@@ -1,5 +1,10 @@
 import re
 
+import pandas as pd
+
+from datetime import datetime
+
+
 '''
     Transforma o texto em string; letras maiúsculas; remove espaços nas laterais da string
 '''
@@ -93,3 +98,10 @@ def extrairTipoDecisao(texto):
         return 'DE'
     else:
         return 'AC'
+
+    
+def read_file(file, separator, encoding):
+    start_time = datetime.now()
+    df = pd.read_csv(file, sep=separator, encoding=encoding)
+    print('Duration: {}'.format(datetime.now() - start_time))
+    return df
