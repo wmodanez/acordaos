@@ -100,8 +100,14 @@ def extrairTipoDecisao(texto):
         return 'AC'
 
     
-def read_file(file, separator, encoding):
+def read_file(file, separator='|', encoding='utf-8'):
     start_time = datetime.now()
     df = pd.read_csv(file, sep=separator, encoding=encoding)
     print('Duration: {}'.format(datetime.now() - start_time))
     return df
+
+
+def save_file(df, file, separator='|', encoding='utf-8'):
+    start_time = datetime.now()
+    df.to_csv(file, sep=separator, index=False, encoding=encoding)
+    print('Duration: {}'.format(datetime.now() - start_time))
