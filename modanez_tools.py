@@ -162,7 +162,7 @@ re_espacos = ' '
 
 
 def padronizacao(texto):
-    texto = pa_html.sub(re_espacos, texto.DECISAO.lower())
+    texto = pa_html.sub(re_espacos, texto.DECISAO)
     
     texto = pa_sem_ponto.sub(re_sem_ponto, texto)
 
@@ -177,7 +177,7 @@ def padronizacao(texto):
     texto = pa_2caracter.sub(re_vazio, pa_hifens_numr.sub(re_vazio, texto))
     texto = pa_espacos.sub(re_espacos, texto)
 
-    return texto
+    return texto.lower()
     
 
 def find_case_insensitive(dirname, extensions):
@@ -189,14 +189,6 @@ def find_case_insensitive(dirname, extensions):
             list_files.append(filename)
 
     return sorted(list_files)
-
-  
-def format_numero_acordao(valor):
-    string = re.sub(re.compile('\D'), '', valor)
-    if len(string)>4:
-        return string[:-4]
-    else:
-        return string
     
     
 def extrairTipoSessao(texto):
