@@ -1,4 +1,4 @@
-import re, os, glob, signal
+import re, os, glob
 
 import pandas as pd
 
