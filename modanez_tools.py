@@ -1,8 +1,14 @@
-import re, os, glob
+import re, os, glob, spacy, nltk
 
 import pandas as pd
 
 from datetime import datetime
+from autocorrect import Speller
+from nltk.stem import RSLPStemmer
+from spacy.lang.pt import Portuguese
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+from modanez_stopwords import PortugueseStopWords
 
 
 # Variáveis criadas para buscar a regex correspondente o nome de cada uma
@@ -146,26 +152,64 @@ re_transform_url = 'URL'
 pa_html = re.compile(r'<(\/|\\)?.+?>', re.UNICODE)
 
 # pa_remove_numr = re.compile(r'((?<!\_)([\d]+)[?=(\.|\/|\°|\º|\ª|])|(?<=\/)([\d]+)(?=\.|\/|\s|;|,|-)')
-pa_remove_numr = re.compile(r'(?<=\s|\/|\.|,|:|;)([\d]+)(?<!\s|\))')
+pa_remove_numr = re.compile(r'(?<=\s|\/|\.|,|:|;|#|&|>)([\d.|;|,|:]+)(?<!\s|\))')
 re_vazio = ''
 
 pa_hifens_numr = re.compile(r'(?<=\s)(-[\d]+|-)(?<!\s)')
 
-pa_punctuation = re.compile(r'[.,;:?!–\\¿\/\°\º\ª\(\)\$\%\&\#]')
+pa_punctuation = re.compile(r'[?!–\\¿\/\°\º\ª\(\)\$\%\&\#]')
 
-pa_2caracter = re.compile(r'(?<=\s)[a-zA-Z]{1,2}(?=\s|,|;)')
+pa_2caracter = re.compile(r'(?<=\s)[a-zA-Za-záàâãéèêíïóôõöúçñÁÀÂÃÉÈÍÏÓÔÕÖÚÇÑ]{0,2}(?=\s|,|;)')
 
 pa_generico = re.compile(r'(fls|folha[s]?|peça[s]?|grifo[s]? nosso[s]?|-?[X]-?|CPF|CNPJ|LTDA)', re.I)
 
-pa_espacos = re.compile(r'([\s]{2,})')
+pa_espacos = re.compile(r'(\s{2,})')
 re_espacos = ' '
+
+pa_new_line = re.compile(r'(<br>|<\/p>)')
+re_new_line = '\n'
+
+nlp = spacy.load('pt_core_news_lg')
+
+parser = Portuguese()
+
+
+def apply_tokenize(sentence):
+    return word_tokenize(sentence)
+
+
+def remove_stopwords(sentence):
+    all_stopwords = nlp.Defaults.stop_words
+    stopwordnez = PortugueseStopWords().OnlyStopWords()
+
+    stopwordnez += all_stopwords
+    stopwordnez = set(stopwordnez)
+    return [word for word in sentence if not word in stopwordnez if len(word) > 2]
+
+
+def apply_lemm(sentence):
+    lemma = WordNetLemmatizer()
+    return [lemma.lemmatize(word) for word in sentence if len(word) > 2]
+
+
+def apply_stemmer(sentence):
+    stemmer = RSLPStemmer()    
+    return [stemmer.stem(word) for word in sentence if len(word) > 2]
+
+
+def apply_correction(sentence):
+    spell = Speller('pt', fast=True)
+    return spell(sentence)
+
+
+def remove_token(sentence):
+    return ' '.join([word for word in sentence if len(word) > 2])
 
 
 def padronizacao(texto):
-    texto = pa_html.sub(re_espacos, texto.DECISAO)
+    texto = pa_new_line.sub(re_new_line, texto.DECISAO)
     
     texto = pa_sem_ponto.sub(re_sem_ponto, texto)
-
     texto = pa_lei.sub(re_lei, pa_decreto.sub(re_decreto, texto))
     texto = pa_inciso.sub(re_inciso, pa_paragrafo.sub(re_paragrafo, pa_artigo.sub(re_artigo, texto)))
     texto = pa_tcu.sub(re_tcu, pa_ritcu.sub(re_ritcu, texto))
@@ -173,11 +217,17 @@ def padronizacao(texto):
     texto = pa_depl.sub(re_depl, pa_de1c.sub(re_de1c, pa_de2c.sub(re_de2c, texto)))
     texto = pa_arpl.sub(re_arpl, pa_ar1c.sub(re_ar1c, pa_ar2c.sub(re_ar2c, texto)))
     texto = pa_transform_emails.sub(re_transform_emails, pa_transform_url.sub(re_transform_url, texto))
-    texto = pa_remove_numr.sub(re_vazio, pa_punctuation.sub(re_vazio, pa_generico.sub(re_vazio, texto)))
-    texto = pa_2caracter.sub(re_vazio, pa_hifens_numr.sub(re_vazio, texto))
+    
+    texto = pa_remove_numr.sub(re_vazio, texto)
+    texto = pa_punctuation.sub(re_vazio, texto)
+    texto = pa_generico.sub(re_vazio, texto)
+    texto = pa_hifens_numr.sub(re_vazio, texto)
     texto = pa_espacos.sub(re_espacos, texto)
+    texto = pa_html.sub(re_vazio, texto)
 
-    return texto.lower()
+    texto = remove_token(remove_stopwords(apply_tokenize(apply_correction(texto.lower()))))
+#     texto = remove_token(apply_stemmer(remove_stopwords(apply_tokenize(texto.lower()))))
+    return pa_2caracter.sub(re_vazio, texto)
     
 
 def find_case_insensitive(dirname, extensions):
